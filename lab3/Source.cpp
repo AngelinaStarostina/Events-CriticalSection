@@ -6,38 +6,78 @@ using namespace std;
 HANDLE event1, event2;
 CRITICAL_SECTION critSection;
 char* sortedArr = NULL;
+int n;
 
-void WINAPI CountElement(LPVOID* arr)
+void WINAPI CountElement(char* arr)
 {
 	WaitForSingleObject(event2, INFINITE);
 	int count = 0;
-	int n = (char)arr[0];
-	for (int i = 1; i <= n; i++)
+	for (int i = 0; i < n; i++)
 	{
 		if ((int)arr[i] % 2 == 0 && (int)arr[i] != 0)
 			count++;
 	}
 
-	cout << "Количество четных элементов: " << count;
+	cout << "Количество четных элементов: " << count << endl;
 
 	EnterCriticalSection(&critSection);
-	for (int i = 0; i < strlen(sortedArr); i++)
+	cout << "Массив CountElement: ";
+	for (int i = 0; i < n; i++)
 	{
 		cout << sortedArr[i] << endl;
 	}
 	LeaveCriticalSection(&critSection);
-
 }
 
-UINT WINAPI Work(LPVOID* arr)
+UINT WINAPI Work(char* arr)
 {
 	int time;
 	cout << "Введите временной интервал, требуемый для отдыха после подготовки одного элемента в массиве: ";
 	cin >> time;
-	int n = (char)arr[0];
 	sortedArr = new char[n];
 	
+	int j = 0;
+	char H;
+	for (int i = 0; i < n; i++)
+	{
+		H = (char)arr[i];
+		if (H < 48)
+		{
+			sortedArr[j] = H;
+			j++;
+		}
+		else if (H > 57 && H < 65)
+		{
+			sortedArr[j] = H;
+			j++;
+		}
+		else if (H > 90 && H < 97)
+		{
+			sortedArr[j] = H;
+			j++;
+		}
+		else if (H > 122)
+		{
+			sortedArr[j] = H;
+			j++;
+		}
+	}
 
+	if (j != n)
+	{
+		for (int i = j; i < n; i++)
+			sortedArr[i] = ' ';
+	}
+
+	int k;
+	for (int i = 0; i < n; i++)
+	{
+		cout << sortedArr[i] << endl;
+		Sleep(time);
+	}
+
+
+	cout << endl;
 	SetEvent(event1);
 	return 0;
 }
@@ -50,13 +90,11 @@ int main()
 	event2 = CreateEvent(NULL, FALSE, FALSE, NULL);	//Инициализировать необходимые события и критические секции.
 	InitializeCriticalSection(&critSection);
 
-	int n;
 	char* arr = NULL;
 	cout << "Введите размерность и элементы массива: ";			//создать массив, размерность и элементы которого вводятся пользователем с консоли;
 	cin >> n;
-	arr = new char[n+1];
-	arr[0] = n;
-	for (int i = 1; i < n + 1; i++)
+	arr = new char[n];
+	for (int i = 0; i < n; i++)
 		cin >> arr[i];
 
 	int k;
@@ -76,23 +114,19 @@ int main()
 
 
 	WaitForSingleObject(event1, INFINITE);		//Получить от потока work сигнал о начале суммирования 
-	for (int i = 0; i < strlen(sortedArr); i++)
+	cout << "Итоговый массив: ";
+	for (int i = 0; i < n; i++)
 	{
-		cout << sortedArr[i];					//Выводить на экран элементы массива
+		cout << sortedArr[i] << endl;					//Выводить на экран элементы массива
 	}
 
 	SetEvent(event2);			//известить поток CountElement о начале суммирования
 
-
-	for (int i = 0; i < strlen(sortedArr); i++)
-	{
-		cout << sortedArr[i];				// Выводить на экран элементы массива
-	}
-
 	EnterCriticalSection(&critSection);
-	for (int i = 0; i < strlen(sortedArr); i++)
+	cout << "Итоговый массив (CriticalSection): ";
+	for (int i = 0; i < n; i++)
 	{
-		cout << sortedArr[i];				// Выводить на экран элементы массива, Дождаться сигнала потока CountElement, Вывести на экран результат работы потока CountElement
+		cout << sortedArr[i] << endl;				// Выводить на экран элементы массива, Вывести на экран результат работы потока CountElement
 	}
 	LeaveCriticalSection(&critSection);
 
