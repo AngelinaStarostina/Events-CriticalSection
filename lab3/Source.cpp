@@ -12,16 +12,17 @@ void WINAPI CountElement(char* arr)
 {
 	WaitForSingleObject(event2, INFINITE);
 	int count = 0;
+	int k;
 	for (int i = 0; i < n; i++)
 	{
-		if ((int)arr[i] % 2 == 0 && (int)arr[i] != 0)
+		if (!isspace(sortedArr[i]))
 			count++;
 	}
 
-	cout << "Количество четных элементов: " << count << endl;
+	cout << "Количество символов соответствующих знакам препинания итогового массива: " << count << endl;
 
 	EnterCriticalSection(&critSection);
-	cout << "Массив CountElement: ";
+	cout << "Массив CountElement: " << endl;
 	for (int i = 0; i < n; i++)
 	{
 		cout << sortedArr[i] << endl;
@@ -91,7 +92,7 @@ int main()
 	InitializeCriticalSection(&critSection);
 
 	char* arr = NULL;
-	cout << "Введите размерность и элементы массива: ";			//создать массив, размерность и элементы которого вводятся пользователем с консоли;
+	cout << "Введите размерность и элементы массива: " ;			//создать массив, размерность и элементы которого вводятся пользователем с консоли;
 	cin >> n;
 	arr = new char[n];
 	for (int i = 0; i < n; i++)
@@ -114,7 +115,7 @@ int main()
 
 
 	WaitForSingleObject(event1, INFINITE);		//Получить от потока work сигнал о начале суммирования 
-	cout << "Итоговый массив: ";
+	cout << "Итоговый массив: " << endl;
 	for (int i = 0; i < n; i++)
 	{
 		cout << sortedArr[i] << endl;					//Выводить на экран элементы массива
@@ -123,7 +124,7 @@ int main()
 	SetEvent(event2);			//известить поток CountElement о начале суммирования
 
 	EnterCriticalSection(&critSection);
-	cout << "Итоговый массив (CriticalSection): ";
+	cout << "Итоговый массив (CriticalSection): " << endl;
 	for (int i = 0; i < n; i++)
 	{
 		cout << sortedArr[i] << endl;				// Выводить на экран элементы массива, Вывести на экран результат работы потока CountElement
