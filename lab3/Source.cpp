@@ -6,27 +6,31 @@ using namespace std;
 HANDLE event1, event2;
 CRITICAL_SECTION critSection;
 char* sortedArr = NULL;
-int n;
+int numElements;
+int countElements = 0;
+
+void outArray(int time)
+{
+	for (int i = 0; i < numElements; i++)
+	{
+		cout << sortedArr[i] << endl;
+		Sleep(time);
+	}
+}
 
 void WINAPI CountElement(char* arr)
 {
+	EnterCriticalSection(&critSection);
 	WaitForSingleObject(event2, INFINITE);
-	int count = 0;
-	int k;
-	for (int i = 0; i < n; i++)
+	for (int i = 0; i < numElements; i++)
 	{
 		if (!isspace(sortedArr[i]))
-			count++;
+			countElements++;
 	}
-
-	cout << "Количество символов соответствующих знакам препинания итогового массива: " << count << endl;
-
-	EnterCriticalSection(&critSection);
+	
 	cout << "Массив CountElement: " << endl;
-	for (int i = 0; i < n; i++)
-	{
-		cout << sortedArr[i] << endl;
-	}
+	outArray(0);
+	
 	LeaveCriticalSection(&critSection);
 }
 
@@ -35,11 +39,11 @@ UINT WINAPI Work(char* arr)
 	int time;
 	cout << "Введите временной интервал, требуемый для отдыха после подготовки одного элемента в массиве: ";
 	cin >> time;
-	sortedArr = new char[n];
+	sortedArr = new char[numElements];
 	
 	int j = 0;
 	char H;
-	for (int i = 0; i < n; i++)
+	for (int i = 0; i < numElements; i++)
 	{
 		H = (char)arr[i];
 		if (H < 48)
@@ -64,19 +68,13 @@ UINT WINAPI Work(char* arr)
 		}
 	}
 
-	if (j != n)
+	if (j != numElements)
 	{
-		for (int i = j; i < n; i++)
+		for (int i = j; i < numElements; i++)
 			sortedArr[i] = ' ';
 	}
 
-	int k;
-	for (int i = 0; i < n; i++)
-	{
-		cout << sortedArr[i] << endl;
-		Sleep(time);
-	}
-
+	outArray(time);
 
 	cout << endl;
 	SetEvent(event1);
@@ -88,23 +86,18 @@ int main()
 	setlocale(LC_ALL, "rus");
 
 	event1 = CreateEvent(NULL, FALSE, FALSE, NULL);
-	event2 = CreateEvent(NULL, FALSE, FALSE, NULL);	//Инициализировать необходимые события и критические секции.
+	event2 = CreateEvent(NULL, FALSE, FALSE, NULL);
 	InitializeCriticalSection(&critSection);
 
 	char* arr = NULL;
-	cout << "Введите размерность и элементы массива: " ;			//создать массив, размерность и элементы которого вводятся пользователем с консоли;
-	cin >> n;
-	arr = new char[n];
-	for (int i = 0; i < n; i++)
+	cout << "Введите размерность и элементы массива: " ;
+	cin >> numElements;
+	arr = new char[numElements+1];
+	for (int i = 0; i < numElements; i++)
 		cin >> arr[i];
 
-	int k;
-	cout << "Введите k: ";
-	cin >> k;
-
-
 	HANDLE worker;
-	worker = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)Work, (void*)arr, 0, NULL);		//запустить поток work; запустить поток CountElementм;
+	worker = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)Work, (void*)arr, 0, NULL);	
 	if (worker == 0)
 		return GetLastError();
 
@@ -114,35 +107,28 @@ int main()
 		return GetLastError();
 
 
-	WaitForSingleObject(event1, INFINITE);		//Получить от потока work сигнал о начале суммирования 
+	WaitForSingleObject(event1, INFINITE);		 
 	cout << "Итоговый массив: " << endl;
-	for (int i = 0; i < n; i++)
-	{
-		cout << sortedArr[i] << endl;					//Выводить на экран элементы массива
-	}
+	outArray(0);
 
-	SetEvent(event2);			//известить поток CountElement о начале суммирования
+	SetEvent(event2);		
 
 	EnterCriticalSection(&critSection);
+	cout << "Количество символов соответствующих знакам препинания итогового массива: " << countElements << endl;
 	cout << "Итоговый массив (CriticalSection): " << endl;
-	for (int i = 0; i < n; i++)
-	{
-		cout << sortedArr[i] << endl;				// Выводить на экран элементы массива, Вывести на экран результат работы потока CountElement
-	}
+	outArray(0);
 	LeaveCriticalSection(&critSection);
 
 	WaitForSingleObject(countEl, INFINITE);
 	WaitForSingleObject(worker, INFINITE);
-
 	
-	CloseHandle(worker);
 	CloseHandle(countEl);
+	CloseHandle(worker);	
+	delete[] arr;
 	DeleteCriticalSection(&critSection);
 	CloseHandle(event2);
 	CloseHandle(event1);
-
 	delete[] sortedArr;
-	delete[] arr;
-
+	
 	return 0;
 }
